@@ -3,6 +3,8 @@ import math
 from lark import Lark, InlineTransformer, Token
 
 
+# Implemente a gramática aqui! Você pode testar manualmente seu código executando
+# o arquivo calc.py e testá-lo utilizando o pytest.
 grammar = Lark(
     r"""
     ?start  : assign* comp?
@@ -34,6 +36,17 @@ grammar = Lark(
     """
 )
 
+exprs = [
+    "pi",
+    "sin"
+]
+
+
+for src in exprs:
+    tree = grammar.parse(src)
+    print(src)
+    print(tree.pretty())
+    print('-' * 40)
 
 class CalcTransformer(InlineTransformer):
     from operator import add, sub, mul, truediv as div  # ... e mais! 
@@ -42,6 +55,7 @@ class CalcTransformer(InlineTransformer):
         super().__init__()
         self.variables = {k: v for k, v in vars(math).items() if not k.startswith("_")}
         self.variables.update(max=max, min=min, abs=abs)
+        self.vars = {}
 
     def number(self, token):
         try:
@@ -55,17 +69,17 @@ class CalcTransformer(InlineTransformer):
 
 
     def var(self, token):
-        if token.startswith("-") and token[1:] in self.variables:
-            return -self.variables[token[1:]]
-        elif token in self.variables:
+        if token in self.variables:
             return self.variables[token]
+        elif token[0].startswith('-') and token[1:] in self.variables:
+            return -self.variables[token[1:]]
         else:
             return self.env[token]
 
     def function_transform(self, name, *args):
         name = str(name)
         fn = self.variables[name.split('-')[-1]]
-        if name[0] == '-':
+        if name.startswith('-'):
             return -fn(*args)
         return fn(*args)
 
